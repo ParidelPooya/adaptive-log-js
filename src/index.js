@@ -1,358 +1,78 @@
-let spreadify = require("./spreadify");
+class Logger {
 
-class Execute {
-    static getByPath(obj, key) {
-        if (key.length === 0) {
-            return obj;
-        }
-
-        let keys = key.split(".");
-
-        for (let i = 0; i < keys.length; i++) {
-            obj = obj[keys[i]];
-        }
-
-        return obj;
-    }
-
-    static addPrefixToPath(path, data) {
-        let obj = {};
-        let pointer = obj;
-
-        let keys = path.split(".");
-
-        for (let i = 0; i < keys.length; i++) {
-            pointer[keys[i]] = {};
-
-            if (i === keys.length - 1) {
-                pointer[keys[i]] = data;
-            } else {
-                pointer = pointer[keys[i]];
-            }
-        }
-
-        return obj;
-    }
-    
     constructor(options) {
-        let defaultOption = {
+        let defaultOptions = {
             logger: console,
-            cache: require("./tiny-cache")
+            buffer_level: Logger.level.DEBUG,
+            flush_level: Logger.level.DEBUG,
+            buffer_size: 100
         };
 
-        // Add all action handlers
-        this._actions = {
-            "default": Execute.defaultAction.bind(this),
-            "map": Execute.mapActionHandler.bind(this)
+        if (!options) {
+            options = {};
+        }
+
+        this._options = {
+            logger: options.logger ? options.logger : defaultOptions.logger,
+            buffer_level: options.buffer_level ? options.buffer_level : defaultOptions.buffer_level,
+            flush_level: options.flush_level ? options.flush_level : defaultOptions.flush_level,
+            buffer_size: options.buffer_size ? options.buffer_size : defaultOptions.buffer_size
         };
 
-        this._options = spreadify()(defaultOption, options || {});
+
+        this._buffer = [[], []];
+        this._selected_buffer = 0;
     }
 
-    static defaultAction(action, executionData, options) {
-        return Promise.resolve(action(executionData, options));
+    flush() {
+        this._buffer[1- this._selected_buffer].map((item) => {
+            this._options.logger.log(item.logObject);
+        });
+
+        this._buffer[this._selected_buffer].map((item) => {
+            this._options.logger.log(item.logObject);
+        });
+        this._buffer = [[], []];
     }
 
-    static mapActionHandler(action, executionData, options) {
-        /*
-            action should be object with
-            {
-                array: function that produce an array,
-                reducer: child step to execute for each element in the array.
+    writeToBuffer(level, logObject) {
+        if (this._options.buffer_level >= level) {
+
+            if (this._buffer[this._selected_buffer].length === this._options.buffer_size) {
+                this._selected_buffer = 1 - this._selected_buffer;
+                this._buffer[this._selected_buffer] = [];
             }
-         */
-        let final = [];
 
-        return action.array(executionData).reduce((promise, item) => {
-            return promise
-                .then(() => {
-                    return Promise
-                        .resolve(action.reducer(item, options))
-                        .then(result => {
-                            final.push(result);
-                            return final;
-                        });
-                })
-                .catch(console.error);
+            this._buffer[this._selected_buffer].push({level: Logger.level.DEBUG, logObject: logObject});
 
-        }, Promise.resolve());
-    }
-
-    use(middleware) {
-        if (!middleware.type) {
-            throw new Error("type is missing in middleware contract");
-        }
-
-        switch (middleware.type) {
-            case "action":
-                return this.addActionMiddleware(middleware);
-            default:
-                throw new Error("Unknown middleware type");
-        }
-    }
-
-    addActionMiddleware(middleware) {
-        if (!middleware.action) {
-            throw new Error("middleware action is missing");
-        }
-
-        if (!middleware.name) {
-            throw new Error("middleware name is missing");
-        }
-
-        this._actions[middleware.name] = middleware.action;
-        return true;
-    }
-
-    run(executionTree, executionData) {
-        return this.processSteps(executionTree, executionData).then((response) => response.result);
-    }
-
-    goToNextStep(step, executionData) {
-        const testResult = typeof step.test === "function"
-            ? step.test(executionData) // call the test with the results from the action
-            : step.test;
-
-        this._options.logger.info(`Test result: ${testResult}`);
-        // get a reference to the next step based on the test result
-        const nextStep = typeof(step.if[testResult]) !=="undefined" ? step.if[testResult] : step.if.default;
-
-        if (typeof(nextStep) === "number") {
-            // next step is not an execution tree but a predefined signal
-            return Promise.resolve({result: {}, signal: nextStep});
-        }
-        else {
-            // TODO: better handeling if the next step is missing.
-            return nextStep ?
-                this.processSteps(nextStep, executionData) :
-                Promise.reject("Unhandled scenario");
-        }
-    }
-
-    executeStepActionWithRetry(step, executionData) {
-        let action = this._actions[step.actionType](step.action, executionData, this._options);
-
-        let retryPromise = (tries) => {
-            return Promise.resolve(action).catch( (err) => {
-                if (--tries > 0 && step.errorHandling.tryCondition(err)) {
-                    this._options.logger.warn(`Step: ${step.title} failed. Retrying.`);
-
-                    return retryPromise(tries);
-                } else {
-                    this._options.logger.log(`Step: ${step.title} action failed.`);
-
-                    return Promise.reject(err);
-                }
-            });
-        };
-
-        return retryPromise(step.errorHandling.maxAttempts);
-
-    }
-
-    executeStepActionWithCache(step, executionData) {
-        if (step.cache.enable) {
-            let cacheKey = step.cache.key(executionData);
-            return Promise.resolve(this._options.cache.has(cacheKey))
-                .then((hasData) => {
-                    console.log("Has Data:", hasData);
-                    if (hasData) {
-                        return Promise.resolve(this._options.cache.get(cacheKey));
-                    } else {
-                        return this.executeStepActionWithRetry(step, executionData).then((data) => {
-                            return Promise.resolve(this._options.cache.set(cacheKey, data, step.cache.ttl)).then((set_result) => {
-                                console.log("Set Data in Cache result:", set_result);
-                                return Promise.resolve(data);
-                            });
-                        });
-                    }
-                });
-        } else {
-            return this.executeStepActionWithRetry(step, executionData);
-        }
-    }
-
-    executeStepActionAndHandleError(step, executionData) {
-        return this.executeStepActionWithCache(step, executionData)
-            .catch((e) => {
-                return step.errorHandling.continueOnError ?
-                    Promise.resolve(step.errorHandling.onErrorResponse) :
-                    Promise.reject(e);
-            });
-    }
-
-    processStep(step, executionData) {
-
-        let _step = spreadify(true)(Execute.executionTreeDefaultSetting.steps[0], step);
-        let allData = spreadify()(executionData, {});
-
-        this._options.logger.info(`Step: ${_step.title}`);
-
-        return new Promise((resolve, reject) => {
-
-            this.executeStepActionAndHandleError(_step, executionData).then((result) => {
-
-                let _output = spreadify(true)(
-                    Execute.executionTreeDefaultSetting.steps[0].output,
-                    _step.output);
-
-                let _result = {};
-
-                if (_output.map.destination.length !== 0) {
-                    _result = Execute.addPrefixToPath(_output.map.destination, Execute.getByPath(result, _output.map.source));
-                }
-                else {
-                    _result = Execute.getByPath(result, _output.map.source);
-                }
-
-                this._options.logger.info(`Action result: ${JSON.stringify(_result)}`);
-
-                if (_output.accessibleToNextSteps) {
-                    allData = spreadify(true)(allData, _result);
-                }
-
-                // if there's a test defined, then actionResult must be a promise
-                // so pass the promise response to goToNextStep
-                if ("test" in _step) {
-                    this.goToNextStep(_step, allData).then((childResponse) => {
-                        this._options.logger.info(`Child result: ${JSON.stringify(childResponse.result)}`);
-
-                        childResponse.result = spreadify(true)(result, childResponse.result);
-
-                        if (_output.map.destination.length !== 0) {
-                            childResponse.result = Execute.addPrefixToPath(_output.map.destination, Execute.getByPath(childResponse.result, _output.map.source));
-                        }
-                        else {
-                            childResponse.result = Execute.getByPath(childResponse.result, _output.map.source);
-                        }
-
-                        this._options.logger.info(`Total result: ${JSON.stringify(childResponse.result)}`);
-
-                        resolve(childResponse);
-                    }).catch((e) => {
-                        reject(e);
-                    });
-                } else {
-                    resolve({result: _result, signal: Execute.executionMode.CONTINUE});
-                }
-            }).catch((e) => {
-                reject(e);
-            });
-        });
-    }
-
-    processSteps(executionTree, executionData) {
-
-        let _executionTree;
-
-        if (Object.prototype.toString.call(executionTree) === "[object Array]") {
-            // if executionTree is array then we need to convert it to proper object with all missing properties.
-            _executionTree = {
-                steps: executionTree
-            };
-        } else {
-            _executionTree = executionTree;
-        }
-
-        _executionTree = spreadify()(Execute.executionTreeDefaultSetting, _executionTree);
-
-        let finalResult = {};
-        let finalSignal = Execute.executionMode.CONTINUE;
-
-        let allData = spreadify()(executionData, {});
-
-        let i = 0;
-        let listOfPromises = [];
-
-        let ps = [];
-        _executionTree.steps.map((step) => {
-
-            let _step = spreadify()(
-                Execute.executionTreeDefaultSetting.steps[0],
-                step);
-
-            ps.push(() => {
-                return this.processStep(step, allData)
-                    .then(response => {
-                        finalSignal = Math.max(finalSignal, response.signal);
-
-                        let _output = spreadify()(
-                            Execute.executionTreeDefaultSetting.steps[0].output,
-                            _step.output);
-
-                        if (_output.accessibleToNextSteps) {
-                            allData = spreadify()(allData, response.result);
-                        }
-
-                        let _stepResult = {};
-
-                        if (_output.addToResult) {
-                            _stepResult = response.result;
-                        }
-
-                        finalResult = spreadify(true)(finalResult, _stepResult);
-
-                        return {result: finalResult, signal: finalSignal};
-                    });
-            });
-        });
-
-        function doNextAction() {
-            if (i < ps.length && finalSignal === Execute.executionMode.CONTINUE) {
-                return ps[i++]().then(doNextAction);
+            if (this._options.flush_level >= level) {
+                this.flush();
             }
         }
-
-        while (i < _executionTree.concurrency && i < ps.length) {
-            listOfPromises.push(doNextAction());
-        }
-        return Promise.all(listOfPromises).then(() => {
-            return {
-                result: finalResult,
-                signal: finalSignal === Execute.executionMode.STOP_ENTIRE_EXECUTION ?
-                    finalResult : Execute.executionMode.CONTINUE
-            };
-        });
-
     }
 
+    log(logObject) {
+        this.writeToBuffer(Logger.level.DEBUG, logObject);
+    }
+
+    info(logObject) {
+        this.writeToBuffer(Logger.level.INFO, logObject);
+    }
+
+    warn(logObject) {
+        this.writeToBuffer(Logger.level.WARN, logObject);
+    }
+
+    error(logObject) {
+        this.writeToBuffer(Logger.level.ERROR, logObject);
+    }
 }
 
-// Because static keyword works only for method
-Execute.executionMode = {
-    CONTINUE: 0,
-    STOP_LEVEL_EXECUTION: 1,
-    STOP_ENTIRE_EXECUTION: 2
+Logger.level = {
+    "DEBUG": 0,
+    "INFO": 1,
+    "WARN": 2,
+    "ERROR": 3
 };
 
-Execute.executionTreeDefaultSetting = {
-    concurrency: 1,
-    steps: [
-        {
-            errorHandling: {
-                maxAttempts: 0,
-                tryCondition: () => true,
-                continueOnError: false,
-                onErrorResponse: {}
-            },
-            cache: {
-                enable: false,
-                ttl: 60
-            },
-            output: {
-                accessibleToNextSteps: true,
-                addToResult: true,
-                map: {
-                    source: "",
-                    destination: ""
-                }
-            },
-            actionType: "default",
-            action: () => {
-                return {};
-            }
-        }
-    ]
-};
-
-module.exports = Execute;
+module.exports = Logger;

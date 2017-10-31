@@ -4,7 +4,7 @@ const webpack = require('webpack');
 const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const path = require('path');
 
-let libraryName = 'execute-js';
+let libraryName = 'log-js';
 
 let plugins = [], outputFile;
 
