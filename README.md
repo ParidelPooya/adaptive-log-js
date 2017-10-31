@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/ParidelPooya/adaptive-log-js.svg?branch=master)](https://travis-ci.org/ParidelPooya/adaptive-log-js)
 [![Coverage Status](https://coveralls.io/repos/github/ParidelPooya/adaptive-log-js/badge.svg?branch=master)](https://coveralls.io/github/ParidelPooya/adaptive-log-js?branch=master)
 [![npm](https://img.shields.io/npm/v/adaptive-log-js.svg)](https://www.npmjs.com/package/adaptive-log-js)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/adaptive-log-js)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ParidelPooya/Lobby)
 [![Known Vulnerabilities](https://snyk.io/test/github/paridelpooya/adaptive-log-js/badge.svg)](https://snyk.io/test/github/paridelpooya/adaptive-log-js)
 [![license](https://img.shields.io/github/license/paridelpooya/adaptive-log-js.svg)](https://github.com/ParidelPooya/adaptive-log-js/blob/master/LICENSE)
 
