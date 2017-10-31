@@ -4,7 +4,7 @@ const webpack = require('webpack');
 const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const path = require('path');
 
-let libraryName = 'log-js';
+let libraryName = 'adaptive-log-js';
 
 let plugins = [], outputFile;
 

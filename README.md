@@ -1,14 +1,14 @@
 # Log-js
-[![Build Status](https://travis-ci.org/ParidelPooya/log-js.svg?branch=master)](https://travis-ci.org/ParidelPooya/log-js)
-[![Coverage Status](https://coveralls.io/repos/github/ParidelPooya/log-js/badge.svg?branch=master)](https://coveralls.io/github/ParidelPooya/log-js?branch=master)
-[![npm](https://img.shields.io/npm/v/log-js.svg)](https://www.npmjs.com/package/log-js)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/log-js)
-[![Known Vulnerabilities](https://snyk.io/test/github/paridelpooya/log-js/badge.svg)](https://snyk.io/test/github/paridelpooya/log-js)
-[![license](https://img.shields.io/github/license/paridelpooya/log-js.svg)](https://github.com/ParidelPooya/log-js/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/ParidelPooya/adaptive-log-js.svg?branch=master)](https://travis-ci.org/ParidelPooya/adaptive-log-js)
+[![Coverage Status](https://coveralls.io/repos/github/ParidelPooya/adaptive-log-js/badge.svg?branch=master)](https://coveralls.io/github/ParidelPooya/adaptive-log-js?branch=master)
+[![npm](https://img.shields.io/npm/v/adaptive-log-js.svg)](https://www.npmjs.com/package/adaptive-log-js)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/adaptive-log-js)
+[![Known Vulnerabilities](https://snyk.io/test/github/paridelpooya/adaptive-log-js/badge.svg)](https://snyk.io/test/github/paridelpooya/adaptive-log-js)
+[![license](https://img.shields.io/github/license/paridelpooya/adaptive-log-js.svg)](https://github.com/ParidelPooya/adaptive-log-js/blob/master/LICENSE)
 
 Zero dependency logger with adaptive log level for JavaScript
 
-log-js is zero dependency logger with one simple ability: it can keep logs in buffer and will flush logs in case of higher log level.
+adaptive-log-js is zero dependency logger with one simple ability: it can keep logs in buffer and will flush logs in case of higher log level.
 
 ## Table of Contents
 
@@ -28,7 +28,7 @@ log-js is zero dependency logger with one simple ability: it can keep logs in bu
 ## Install
 
 ```bash
-npm install --save log-js
+npm install --save adaptive-log-js
 ```
 
 ## Usage
