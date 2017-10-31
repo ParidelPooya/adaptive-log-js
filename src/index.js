@@ -36,7 +36,7 @@ class Logger {
     }
 
     writeToBuffer(level, logObject) {
-        if (this._options.buffer_level >= level) {
+        if (level >= this._options.buffer_level) {
 
             if (this._buffer[this._selected_buffer].length === this._options.buffer_size) {
                 this._selected_buffer = 1 - this._selected_buffer;
@@ -45,7 +45,7 @@ class Logger {
 
             this._buffer[this._selected_buffer].push({level: Logger.level.DEBUG, logObject: logObject});
 
-            if (this._options.flush_level >= level) {
+            if (level >= this._options.flush_level) {
                 this.flush();
             }
         }
