@@ -1,3 +1,5 @@
+let spreadify = require("./spreadify");
+
 class Execute {
     static getByPath(obj, key) {
         if (key.length === 0) {
@@ -31,36 +33,7 @@ class Execute {
 
         return obj;
     }
-
-    static spreadify(deepCopy) {
-        return function () {
-            // Holds the processed arguments for use by `fn`
-            let spreadArgs = {};
-
-            // Caching length
-            let length = arguments.length;
-
-            let currentArg;
-
-            for (let i = 0; i < length; i++) {
-                currentArg = arguments[i];
-
-                Object.keys(currentArg).map((key) => {
-                    if (deepCopy &&
-                        typeof(spreadArgs[key]) === "object" && spreadArgs[key] !== null &&
-                        currentArg[key] !== null
-
-                    ) {
-                        spreadArgs[key] = Execute.spreadify(deepCopy)(spreadArgs[key], currentArg[key]);
-                    } else {
-                        spreadArgs[key] = currentArg[key];
-                    }
-                });
-            }
-            return spreadArgs;
-        };
-    }
-
+    
     constructor(options) {
         let defaultOption = {
             logger: console,
@@ -73,7 +46,7 @@ class Execute {
             "map": Execute.mapActionHandler.bind(this)
         };
 
-        this._options = Execute.spreadify()(defaultOption, options || {});
+        this._options = spreadify()(defaultOption, options || {});
     }
 
     static defaultAction(action, executionData, options) {
@@ -159,7 +132,7 @@ class Execute {
     executeStepActionWithRetry(step, executionData) {
         let action = this._actions[step.actionType](step.action, executionData, this._options);
 
-        let retryPromise = (tries)=> {
+        let retryPromise = (tries) => {
             return Promise.resolve(action).catch( (err) => {
                 if (--tries > 0 && step.errorHandling.tryCondition(err)) {
                     this._options.logger.warn(`Step: ${step.title} failed. Retrying.`);
@@ -210,8 +183,8 @@ class Execute {
 
     processStep(step, executionData) {
 
-        let _step = Execute.spreadify(true)(Execute.executionTreeDefaultSetting.steps[0], step);
-        let allData = Execute.spreadify()(executionData, {});
+        let _step = spreadify(true)(Execute.executionTreeDefaultSetting.steps[0], step);
+        let allData = spreadify()(executionData, {});
 
         this._options.logger.info(`Step: ${_step.title}`);
 
@@ -219,7 +192,7 @@ class Execute {
 
             this.executeStepActionAndHandleError(_step, executionData).then((result) => {
 
-                let _output = Execute.spreadify(true)(
+                let _output = spreadify(true)(
                     Execute.executionTreeDefaultSetting.steps[0].output,
                     _step.output);
 
@@ -235,7 +208,7 @@ class Execute {
                 this._options.logger.info(`Action result: ${JSON.stringify(_result)}`);
 
                 if (_output.accessibleToNextSteps) {
-                    allData = Execute.spreadify(true)(allData, _result);
+                    allData = spreadify(true)(allData, _result);
                 }
 
                 // if there's a test defined, then actionResult must be a promise
@@ -244,7 +217,7 @@ class Execute {
                     this.goToNextStep(_step, allData).then((childResponse) => {
                         this._options.logger.info(`Child result: ${JSON.stringify(childResponse.result)}`);
 
-                        childResponse.result = Execute.spreadify(true)(result, childResponse.result);
+                        childResponse.result = spreadify(true)(result, childResponse.result);
 
                         if (_output.map.destination.length !== 0) {
                             childResponse.result = Execute.addPrefixToPath(_output.map.destination, Execute.getByPath(childResponse.result, _output.map.source));
@@ -281,12 +254,12 @@ class Execute {
             _executionTree = executionTree;
         }
 
-        _executionTree = Execute.spreadify()(Execute.executionTreeDefaultSetting, _executionTree);
+        _executionTree = spreadify()(Execute.executionTreeDefaultSetting, _executionTree);
 
         let finalResult = {};
         let finalSignal = Execute.executionMode.CONTINUE;
 
-        let allData = Execute.spreadify()(executionData, {});
+        let allData = spreadify()(executionData, {});
 
         let i = 0;
         let listOfPromises = [];
@@ -294,7 +267,7 @@ class Execute {
         let ps = [];
         _executionTree.steps.map((step) => {
 
-            let _step = Execute.spreadify()(
+            let _step = spreadify()(
                 Execute.executionTreeDefaultSetting.steps[0],
                 step);
 
@@ -303,12 +276,12 @@ class Execute {
                     .then(response => {
                         finalSignal = Math.max(finalSignal, response.signal);
 
-                        let _output = Execute.spreadify()(
+                        let _output = spreadify()(
                             Execute.executionTreeDefaultSetting.steps[0].output,
                             _step.output);
 
                         if (_output.accessibleToNextSteps) {
-                            allData = Execute.spreadify()(allData, response.result);
+                            allData = spreadify()(allData, response.result);
                         }
 
                         let _stepResult = {};
@@ -317,7 +290,7 @@ class Execute {
                             _stepResult = response.result;
                         }
 
-                        finalResult = Execute.spreadify(true)(finalResult, _stepResult);
+                        finalResult = spreadify(true)(finalResult, _stepResult);
 
                         return {result: finalResult, signal: finalSignal};
                     });
