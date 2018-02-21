@@ -43,6 +43,38 @@ lab.experiment("Basic Test", () => {
 
     });
 
+    lab.test("keep_history should keep all logs in all buffer", (done) => {
+
+        console.originalLog = console.log;
+        console.log = (data) => {
+            console.originalLog(data);
+        };
+        console.info = (data) => {
+            console.originalLog(data);
+        };
+        console.warn = (data) => {
+            console.originalLog(data);
+        };
+        console.error = (data) => {
+            console.originalLog(data);
+        };
+
+        let logger = new Logger({keep_history: true});
+
+        logger.log(1);
+        logger.info(2);
+        logger.warn(3);
+        logger.error(4);
+
+        logger.flush();
+
+        lab.expect(logger.all.length).to.equal(4);
+        done();
+
+        console.log = console.originalLog;
+
+    });
+
     lab.test("Default log level should log everything", (done) => {
 
         let logCount = 0;
