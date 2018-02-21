@@ -1,6 +1,6 @@
 {
   "name": "adaptive-log-js",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Zero dependency logger with adaptive log level for JavaScript",
   "main": "lib/adaptive-log-js.min.js",
   "scripts": {

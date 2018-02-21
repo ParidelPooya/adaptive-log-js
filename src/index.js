@@ -5,7 +5,8 @@ class Logger {
             logger: console,
             buffer_level: Logger.level.DEBUG,
             flush_level: Logger.level.DEBUG,
-            buffer_size: 100
+            buffer_size: 100,
+            keep_history: false
         };
 
         if (!options) {
@@ -16,11 +17,13 @@ class Logger {
             logger: options.logger ? options.logger : defaultOptions.logger,
             buffer_level: options.buffer_level ? options.buffer_level : defaultOptions.buffer_level,
             flush_level: options.flush_level ? options.flush_level : defaultOptions.flush_level,
-            buffer_size: options.buffer_size ? options.buffer_size : defaultOptions.buffer_size
+            buffer_size: options.buffer_size ? options.buffer_size : defaultOptions.buffer_size,
+            keep_history: options.keep_history ? options.keep_history : defaultOptions.keep_history
         };
 
-
         this._buffer = [[], []];
+        this.all = [];
+
         this._selected_buffer = 0;
     }
 
@@ -55,6 +58,10 @@ class Logger {
 
     writeToBuffer(level, logObject) {
         if (level >= this._options.buffer_level) {
+
+            if (this._options.keep_history) {
+                this.all.push({level: level, logObject: logObject});
+            }
 
             if (this._buffer[this._selected_buffer].length === this._options.buffer_size) {
                 this._selected_buffer = 1 - this._selected_buffer;
