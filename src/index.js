@@ -37,23 +37,20 @@ class Logger {
     }
 
     sendToUpperLogger(item) {
-        let method;
         switch (item.level) {
             case Logger.level.DEBUG:
-                method = this._options.logger.log;
+                this._options.logger.log(item.logObject);
                 break;
             case Logger.level.INFO:
-                method = this._options.logger.info;
+                this._options.logger.info(item.logObject);
                 break;
             case Logger.level.WARN:
-                method = this._options.logger.warn;
+                this._options.logger.warn(item.logObject);
                 break;
             case Logger.level.ERROR:
-                method = this._options.logger.error;
+                this._options.logger.error(item.logObject);
                 break;
         }
-
-        method(item.logObject);
     }
 
     writeToBuffer(level, logObject) {
