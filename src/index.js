@@ -26,13 +26,34 @@ class Logger {
 
     flush() {
         this._buffer[1- this._selected_buffer].map((item) => {
-            this._options.logger.log(item.logObject);
+            this.sendToUpperLogger(item);
         });
 
         this._buffer[this._selected_buffer].map((item) => {
-            this._options.logger.log(item.logObject);
+            this.sendToUpperLogger(item);
         });
+
         this._buffer = [[], []];
+    }
+
+    sendToUpperLogger(item) {
+        let method;
+        switch (item.level) {
+            case Logger.level.DEBUG:
+                method = this._options.logger.log;
+                break;
+            case Logger.level.INFO:
+                method = this._options.logger.info;
+                break;
+            case Logger.level.WARN:
+                method = this._options.logger.warn;
+                break;
+            case Logger.level.ERROR:
+                method = this._options.logger.error;
+                break;
+        }
+
+        method(item.logObject);
     }
 
     writeToBuffer(level, logObject) {
@@ -43,7 +64,7 @@ class Logger {
                 this._buffer[this._selected_buffer] = [];
             }
 
-            this._buffer[this._selected_buffer].push({level: Logger.level.DEBUG, logObject: logObject});
+            this._buffer[this._selected_buffer].push({level: level, logObject: logObject});
 
             if (level >= this._options.flush_level) {
                 this.flush();

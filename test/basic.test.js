@@ -14,13 +14,29 @@ lab.experiment("Basic Test", () => {
             console.originalLog(data);
             logCount++;
         };
+        console.info = (data) => {
+            console.originalLog(data);
+            logCount++;
+        };
+        console.warn = (data) => {
+            console.originalLog(data);
+            logCount++;
+        };
+        console.error = (data) => {
+            console.originalLog(data);
+            logCount++;
+        };
 
         let logger = new Logger();
 
         logger.log(1);
+        logger.info(2);
+        logger.warn(3);
+        logger.error(4);
+
         logger.flush();
 
-        lab.expect(logCount).to.equal(1);
+        lab.expect(logCount).to.equal(4);
         done();
 
         console.log = console.originalLog;
