@@ -235,4 +235,38 @@ lab.experiment("Basic Test", () => {
         done();
 
     });
+
+    lab.test("Skip buffer should log directly to logger", (done) => {
+
+        let logCount = 0;
+        const mockLogger = {
+            log: (data) => {
+                console.log(data);
+                logCount++;
+            },
+            info: (data) => {
+                console.info(data);
+                logCount++;
+            },
+            warn: (data) => {
+                console.warn(data);
+                logCount++;
+            },
+            error: (data) => {
+                console.error(data);
+                logCount++;
+            },
+        };
+
+        let logger = new Logger({logger: mockLogger});
+
+        logger.log(1, true);
+        logger.info(2, true);
+        logger.warn(3, true);
+        logger.error(4, true);
+
+        lab.expect(logCount).to.equal(4);
+        done();
+
+    });
 });
