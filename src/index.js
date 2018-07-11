@@ -56,7 +56,7 @@ class Logger {
         }
     }
 
-    writeToBuffer(level, logObject) {
+    writeToBuffer({level, logObject}) {
         if (level >= this._options.buffer_level) {
 
             if (this._options.keep_history) {
@@ -76,20 +76,28 @@ class Logger {
         }
     }
 
-    log(logObject) {
-        this.writeToBuffer(Logger.level.DEBUG, logObject);
+    logItem(logObject, level, skipBuffer) {
+        const item = {
+            level,
+            logObject,
+        };
+        skipBuffer ? this.sendToUpperLogger(item) : this.writeToBuffer(item);
     }
 
-    info(logObject) {
-        this.writeToBuffer(Logger.level.INFO, logObject);
+    log(logObject, skipBuffer = false) {
+        this.logItem(logObject, Logger.level.DEBUG, skipBuffer);
     }
 
-    warn(logObject) {
-        this.writeToBuffer(Logger.level.WARN, logObject);
+    info(logObject, skipBuffer = false) {
+        this.logItem(logObject, Logger.level.INFO, skipBuffer);
     }
 
-    error(logObject) {
-        this.writeToBuffer(Logger.level.ERROR, logObject);
+    warn(logObject, skipBuffer = false) {
+        this.logItem(logObject, Logger.level.WARN, skipBuffer);
+    }
+
+    error(logObject, skipBuffer = false) {
+        this.logItem(logObject, Logger.level.ERROR, skipBuffer);
     }
 }
 
